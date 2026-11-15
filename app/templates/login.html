@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Sign in — Tokser Backup Manager</title>
+  <link rel="icon" href="/static/images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <div class="auth-shell">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="brand-mark">TB</div>
+        <div>
+          <div class="brand-title">Tokser Backup Manager</div>
+          <div class="brand-sub">by TokserTeam</div>
+        </div>
+      </div>
+
+      <h1 class="auth-title" data-i18n="auth.signin">Sign in</h1>
+      <p class="auth-sub" data-i18n="auth.signinSub">Enter your credentials to access the control panel.</p>
+
+      <div id="login-alert" class="alert error hidden" role="alert"></div>
+
+      <form id="login-form" autocomplete="on" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label for="username" data-i18n="auth.username">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username" required
+                   autofocus spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="password" data-i18n="auth.password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+          </div>
+          <div class="field hidden" id="totp-field">
+            <label for="totp" data-i18n="auth.totp">Two-factor code</label>
+            <input id="totp" name="totp" type="text" inputmode="numeric" maxlength="6"
+                   autocomplete="one-time-code" placeholder="000000">
+          </div>
+          <button class="btn btn-primary w-full" type="submit" id="login-btn">
+            <span data-i18n="auth.signin">Sign in</span>
+          </button>
+        </div>
+      </form>
+
+      <div class="auth-foot">
+        <span id="lang-toggle" style="cursor:pointer">فارسی</span>
+        <span style="margin:0 8px;opacity:.4">·</span>
+        <span>Tokser Backup Manager v1.0.0</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/core.js"></script>
+  <script>
+    (function () {
+      const alertEl = document.getElementById("login-alert");
+      const form = document.getElementById("login-form");
+      const btn = document.getElementById("login-btn");
+      const totpField = document.getElementById("totp-field");
+
+      // If setup has not run yet, go there.
+      api("/api/v1/auth/status").then((s) => {
+        if (s.setup_required) { location.href = "/setup"; return; }
+        if (s.authenticated) { location.href = "/"; }
+      }).catch(() => {});
+
+      document.getElementById("lang-toggle").addEventListener("click", (e) => {
+        const next = TBM.lang === "fa" ? "en" : "fa";
+        setLanguage(next);
+        e.target.textContent = next === "fa" ? "English" : "فارسی";
+      });
+      if (TBM.lang === "fa") {
+        setLanguage("fa");
+        document.getElementById("lang-toggle").textContent = "English";
+      }
+
+      function showError(msg) {
+        alertEl.innerHTML = `${ICONS.alert}<span>${fmt.escape(msg)}</span>`;
+        alertEl.classList.remove("hidden");
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        alertEl.classList.add("hidden");
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value;
+        if (!username || !password) { showError("Username and password are required"); return; }
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>';
+        try {
+          const res = await api("/api/v1/auth/login", {
+            method: "POST",
+            body: { username, password, totp_code: document.getElementById("totp").value.trim() },
+          });
+          TBM.csrf = res.csrf_token;
+          location.href = res.must_change_password ? "/security?force=1" : "/";
+        } catch (err) {
+          if (err.status === 401 && /two-factor/i.test(err.message)) {
+            totpField.classList.remove("hidden");
+            document.getElementById("totp").focus();
+          }
+          showError(err.message || "Sign in failed");
+          btn.disabled = false;
+          btn.innerHTML = '<span>Sign in</span>';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

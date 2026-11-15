@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install system tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq tar gzip zip unzip zstd
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Byte-compile all sources
+        run: python -m compileall -q app tests
+
+      - name: Run tests
+        env:
+          TBM_SCHEDULER: "false"
+        run: pytest tests/ -v --tb=short
+
+  lint:
+    name: Static checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install linters
+        run: pip install ruff
+      - name: Ruff
+        run: ruff check app tests --select E9,F63,F7,F82
+      - name: Shell syntax
+        run: |
+          for f in scripts/*.sh; do bash -n "$f"; done
+
+  security:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for committed secrets
+        run: |
+          fail=0
+          # Sensitive paths must never be tracked.
+          for path in .env config.yaml data backups logs; do
+            if git ls-files --error-unmatch "$path" >/dev/null 2>&1; then
+              echo "::error::$path must not be committed"
+              fail=1
+            fi
+          done
+          # Look for obvious hard-coded credentials.
+          if git grep -nE '(TBM_SECRET_KEY|TBM_ENCRYPTION_KEY)=\S{20,}' -- ':!.env.example' ':!config.example.yaml'; then
+            echo "::error::possible hard-coded secret"
+            fail=1
+          fi
+          exit $fail

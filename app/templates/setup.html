@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Initial setup — Tokser Backup Manager</title>
+  <link rel="icon" href="/static/images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <div class="auth-shell">
+    <div class="auth-card" style="max-width:480px">
+      <div class="auth-brand">
+        <div class="brand-mark">TB</div>
+        <div>
+          <div class="brand-title">Tokser Backup Manager</div>
+          <div class="brand-sub">by TokserTeam</div>
+        </div>
+      </div>
+
+      <h1 class="auth-title">Create administrator</h1>
+      <p class="auth-sub">This is the first run. Create the administrator account that will manage the platform.</p>
+
+      <div id="setup-alert" class="alert error hidden" role="alert"></div>
+
+      <form id="setup-form" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label for="username">Username</label>
+            <input id="username" type="text" required autocomplete="username" spellcheck="false"
+                   pattern="[A-Za-z0-9_.\-]+" minlength="3" maxlength="64" autofocus>
+            <span class="hint">Letters, numbers, dot, dash and underscore (3–64 characters).</span>
+          </div>
+          <div class="field">
+            <label for="full_name">Full name <span class="muted">(optional)</span></label>
+            <input id="full_name" type="text" maxlength="128" autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="email">Email <span class="muted">(optional)</span></label>
+            <input id="email" type="email" maxlength="255" autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" type="password" required autocomplete="new-password" minlength="10">
+            <span class="hint">At least 10 characters with letters and digits. Never use a default password.</span>
+          </div>
+          <div class="field">
+            <label for="password2">Confirm password</label>
+            <input id="password2" type="password" required autocomplete="new-password" minlength="10">
+          </div>
+          <button class="btn btn-primary w-full" type="submit" id="setup-btn">Create administrator &amp; sign in</button>
+        </div>
+      </form>
+
+      <div class="auth-foot">Tokser Backup Manager v1.0.0 · TokserTeam</div>
+    </div>
+  </div>
+
+  <script src="/static/js/core.js"></script>
+  <script>
+    (function () {
+      const alertEl = document.getElementById("setup-alert");
+      const form = document.getElementById("setup-form");
+      const btn = document.getElementById("setup-btn");
+
+      api("/api/v1/auth/status").then((s) => {
+        if (!s.setup_required) location.href = "/login";
+      }).catch(() => {});
+
+      function showError(msg) {
+        alertEl.innerHTML = `${ICONS.alert}<span>${fmt.escape(msg)}</span>`;
+        alertEl.classList.remove("hidden");
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        alertEl.classList.add("hidden");
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value;
+        const password2 = document.getElementById("password2").value;
+        if (password !== password2) { showError("Passwords do not match"); return; }
+        if (password.length < 10) { showError("Password must be at least 10 characters"); return; }
+        if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+          showError("Password must contain letters and digits"); return;
+        }
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>';
+        try {
+          const res = await api("/api/v1/auth/setup", {
+            method: "POST",
+            body: {
+              username, password,
+              email: document.getElementById("email").value.trim(),
+              full_name: document.getElementById("full_name").value.trim(),
+            },
+          });
+          TBM.csrf = res.csrf_token;
+          location.href = "/";
+        } catch (err) {
+          showError(err.message || "Setup failed");
+          btn.disabled = false;
+          btn.innerHTML = "Create administrator & sign in";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

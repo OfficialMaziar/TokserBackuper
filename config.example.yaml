@@ -1,0 +1,66 @@
+# Tokser Backup Manager — example configuration
+#
+# Copy to `config.yaml` and edit. Environment variables (see .env.example)
+# take precedence over values in this file.
+#
+# Never commit config.yaml, .env, or the data/ directory to version control.
+
+# --- Application -----------------------------------------------------------
+env: production
+debug: false
+
+# Bind address. Use 127.0.0.1 behind Nginx (recommended) or 0.0.0.0 for
+# direct access.
+host: 127.0.0.1
+port: 8000
+root_path: ""
+
+# --- Database --------------------------------------------------------------
+# SQLite (default, simplest):
+#   database_url: "sqlite:////opt/tokser-backup-manager/data/tokser.db"
+# PostgreSQL (larger installations):
+#   database_url: "postgresql+psycopg2://tbm:password@localhost:5432/tokser"
+database_url: ""
+
+# --- Security --------------------------------------------------------------
+# Leave empty to auto-generate a random key on first run (stored in data/).
+secret_key: ""
+encryption_key: ""
+
+session_ttl_hours: 12
+# Set to true only when serving over HTTPS.
+session_secure_cookie: false
+login_max_attempts: 5
+login_lockout_minutes: 15
+rate_limit_per_minute: 120
+# Comma-separated hostnames accepted in the Host header (empty = allow all).
+allowed_hosts: []
+# Enable only behind a trusted reverse proxy.
+trust_proxy_headers: false
+
+# --- Backup engine ---------------------------------------------------------
+backup_dir: ""
+max_concurrent_backups: 2
+verify_archives: true
+default_compression: tar.gz   # tar | tar.gz | zip | zst
+default_compression_level: 6
+min_free_disk_mb: 512
+
+# --- Telegram --------------------------------------------------------------
+telegram_api_base: https://api.telegram.org
+telegram_max_upload_bytes: 51380224   # 49 MiB safety margin under the 50 MB cap
+telegram_upload_retries: 3
+telegram_timeout_seconds: 300
+
+# --- Monitoring ------------------------------------------------------------
+disk_warning_percent: 85
+disk_critical_percent: 95
+
+# --- Scheduler -------------------------------------------------------------
+scheduler_enabled: true
+scheduler_tick_seconds: 15
+timezone: UTC
+
+# --- UI defaults -----------------------------------------------------------
+default_language: en    # en | fa
+default_theme: dark     # dark | light

@@ -1,0 +1,69 @@
+# Tokser Backup Manager - service unit
+# Installed to /etc/systemd/system/TBM.service
+#
+# Manage with:  systemctl status TBM
+
+[Unit]
+Description=Tokser Backup Manager
+Documentation=https://github.com/OfficialMaziar/TokserBackuper
+After=network-online.target
+Wants=network-online.target
+# If you use PostgreSQL locally, uncomment:
+# Requires=postgresql.service
+# After=postgresql.service
+
+[Service]
+Type=simple
+# Dedicated unprivileged account created by the installer. It is never root:
+# that would let a web request run arbitrary code with full system access.
+User=TBM
+Group=TBM
+# WorkingDirectory must contain the app/ package. The installer sets this.
+WorkingDirectory=/opt/tokser-backup-manager
+Environment="PYTHONUNBUFFERED=1"
+Environment="PYTHONDONTWRITEBYTECODE=1"
+EnvironmentFile=-/opt/tokser-backup-manager/.env
+ExecStart=/opt/tokser-backup-manager/.venv/bin/uvicorn app.main:app \
+    --host 127.0.0.1 \
+    --port 8000 \
+    --proxy-headers \
+    --forwarded-allow-ips=127.0.0.1 \
+    --no-server-header \
+    --timeout-graceful-shutdown 30
+
+# Graceful shutdown: SIGTERM lets the scheduler stop and workers drain.
+KillSignal=SIGTERM
+TimeoutStopSec=45
+Restart=on-failure
+RestartSec=5
+
+# --- Hardening -------------------------------------------------------------
+# The service is never root. Reading protected trees such as /root is granted
+# with a POSIX ACL instead:  tbm access grant /root
+# (ProtectHome=read-only below still permits reading; only the 0700 mode on
+# /root blocks it, and an ACL overrides that for this account alone.)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+# read-only (not "yes") keeps /home and /root readable so backups of those
+# trees work once an ACL has been granted.
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+# The backup directory and data directory must stay writable.
+ReadWritePaths=/opt/tokser-backup-manager/data /opt/tokser-backup-manager/logs /var/backups/tokser /opt/tokser-backup-manager
+
+# --- Logging ---------------------------------------------------------------
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=TBM
+
+# --- Resource limits -------------------------------------------------------
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

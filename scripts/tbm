@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#
+# Tokser Backup Manager — command line administration wrapper.
+#
+# Installed to /usr/local/bin/tbm by scripts/install.sh.
+#
+# Reads commands need no privileges; database writes are executed as the
+# service user so file ownership stays consistent; `service` commands need
+# root and are re-run under sudo automatically.
+#
+set -Eeuo pipefail
+
+APP_DIR="${TBM_APP_DIR:-/opt/tokser-backup-manager}"
+APP_USER="TBM"
+VENV="${APP_DIR}/.venv"
+PY="${VENV}/bin/python"
+
+# Fall back to the current checkout when the app is not installed, so the CLI
+# is usable straight from a clone during development.
+if [[ ! -x "${PY}" ]]; then
+  if [[ -n "${TBM_PYTHON:-}" ]]; then
+    PY="${TBM_PYTHON}"
+  elif command -v python3 >/dev/null; then
+    PY="$(command -v python3)"
+  else
+    echo "tbm: cannot find the application (${APP_DIR}) or a python3 interpreter" >&2
+    exit 1
+  fi
+  APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fi
+
+cmd="${1:-}"
+
+# `service` needs root; everything else must run as the service user when the
+# installation is owned by it, otherwise SQLite files end up owned by root.
+if [[ "${cmd}" == "service" ]]; then
+  if [[ "${EUID}" -ne 0 ]]; then
+    exec sudo --preserve-env=TBM_DATA_DIR,TBM_BACKUP_DIR,TBM_LOG_DIR,TBM_DATABASE_URL \
+      "${BASH_SOURCE[0]}" "$@"
+  fi
+  exec "${PY}" -m app.cli "$@"
+fi
+
+if [[ "${EUID}" -eq 0 && -x "${VENV}/bin/python" ]] && id -u "${APP_USER}" >/dev/null 2>&1; then
+  # Run as the service user but keep the caller's terminal for password prompts.
+  exec runuser -u "${APP_USER}" -- "${PY}" -m app.cli "$@"
+fi
+
+cd "${APP_DIR}"
+exec "${PY}" -m app.cli "$@"

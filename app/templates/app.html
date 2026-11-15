@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Tokser Backup Manager</title>
+  <link rel="icon" href="/static/images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">TB</div>
+        <div class="brand-text">
+          <div class="brand-title">Tokser Backup</div>
+          <div class="brand-sub">Manager · TokserTeam</div>
+        </div>
+      </div>
+      <nav class="nav" id="nav" aria-label="Main navigation"></nav>
+      <div class="sidebar-footer">
+        <div class="avatar" id="user-avatar">?</div>
+        <div class="user-meta">
+          <div class="user-name" id="user-name">—</div>
+          <div class="user-role" id="user-role">—</div>
+        </div>
+        <button class="btn btn-ghost btn-icon btn-sm" id="logout-btn" title="Sign out" aria-label="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="btn btn-ghost btn-icon" id="menu-btn" aria-label="Toggle menu" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <div class="page-title-wrap">
+          <div class="page-title" id="page-title">Dashboard</div>
+          <div class="page-subtitle" id="page-subtitle"></div>
+        </div>
+        <div class="topbar-spacer"></div>
+
+        <button class="btn btn-ghost btn-icon" id="notif-btn" aria-label="Notifications" title="Notifications" style="position:relative">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+          <span id="notif-dot" class="nav-badge" style="position:absolute;top:2px;inset-inline-end:2px;display:none">0</span>
+        </button>
+
+        <button class="btn btn-ghost btn-icon" id="theme-btn" aria-label="Toggle theme" title="Theme">
+          <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+        </button>
+
+        <button class="btn btn-ghost btn-icon" id="lang-btn" aria-label="Language" title="Language" style="font-size:12px;font-weight:700">EN</button>
+
+        <button class="btn btn-ghost btn-icon" id="accent-btn" aria-label="Accent color" title="Accent color">
+          <span style="width:14px;height:14px;border-radius:50%;background:var(--accent);display:block"></span>
+        </button>
+      </header>
+
+      <main class="content" id="view" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <script src="/static/js/core.js"></script>
+  <script src="/static/js/charts.js"></script>
+  <script src="/static/js/views.js"></script>
+  <script src="/static/js/views-dashboard.js"></script>
+  <script src="/static/js/views-jobs.js"></script>
+  <script src="/static/js/views-backups.js"></script>
+  <script src="/static/js/views-system.js"></script>
+  <script src="/static/js/views-admin.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

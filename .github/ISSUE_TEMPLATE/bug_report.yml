@@ -1,0 +1,81 @@
+name: Bug report
+description: Something does not work as documented
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. **Do not include passwords, bot tokens, API keys
+        or real backup contents.** Security issues should go to SECURITY.md, not here.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the actual behaviour.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Create a job with source /var/www
+        2. Set schedule to daily 03:00
+        3. Run now
+        4. See error ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: TBM version
+      description: From the About page or `git describe --tags`
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Ubuntu 24.04
+        - Ubuntu 22.04
+        - Debian 12
+        - Other Linux
+        - Docker
+    validations:
+      required: true
+  - type: dropdown
+    id: database
+    attributes:
+      label: Database
+      options:
+        - SQLite
+        - PostgreSQL
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: |
+        `journalctl -u tokser-backup-manager -n 100 --no-pager`
+        or the tail of `logs/error.log`. Remove any secrets first.
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for a duplicate
+          required: true
+        - label: I removed all credentials and sensitive data from this report
+          required: true
