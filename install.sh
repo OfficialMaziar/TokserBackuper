@@ -53,10 +53,19 @@ trap cleanup EXIT
 # --- download the project ------------------------------------------------
 say "Downloading ${REPO} (${REF})"
 
+# A private repository needs credentials. Pass them once via TBM_TOKEN:
+#   TBM_TOKEN=ghp_xxx  curl ... | sudo -E bash -s -- ...
+# or export GITHUB_TOKEN. Neither is written to disk.
+TOKEN="${TBM_TOKEN:-${GITHUB_TOKEN:-${GH_TOKEN:-}}}"
+
 DOWNLOADED=0
 if command -v git >/dev/null 2>&1; then
-  if git clone --depth 1 --branch "${REF}" "https://github.com/${REPO}.git" \
-        "${WORKDIR}/src" >/dev/null 2>&1; then
+  CLONE_URL="https://github.com/${REPO}.git"
+  if [[ -n "${TOKEN}" ]]; then
+    CLONE_URL="https://x-access-token:${TOKEN}@github.com/${REPO}.git"
+  fi
+  if git clone --depth 1 --branch "${REF}" "${CLONE_URL}" "${WORKDIR}/src" \
+        >/dev/null 2>&1; then
     DOWNLOADED=1
     ok "Cloned with git"
   else
@@ -65,12 +74,33 @@ if command -v git >/dev/null 2>&1; then
 fi
 
 if [[ "${DOWNLOADED}" -eq 0 ]]; then
-  URL="https://codeload.github.com/${REPO}/tar.gz/refs/heads/${REF}"
-  if ! curl -fsSL "${URL}" -o "${WORKDIR}/src.tar.gz" 2>/dev/null; then
-    URL="https://codeload.github.com/${REPO}/tar.gz/${REF}"
-    curl -fsSL "${URL}" -o "${WORKDIR}/src.tar.gz" \
-      || die "Could not download ${REPO} (${REF}). Verify the repository name and network access."
+  AUTH=()
+  [[ -n "${TOKEN}" ]] && AUTH=(-H "Authorization: Bearer ${TOKEN}")
+
+  # Public repos: codeload. Private repos: the authenticated API tarball.
+  URLS=("https://codeload.github.com/${REPO}/tar.gz/refs/heads/${REF}")
+  [[ -n "${TOKEN}" ]] && URLS+=("https://api.github.com/repos/${REPO}/tarball/${REF}")
+  URLS+=("https://codeload.github.com/${REPO}/tar.gz/${REF}")
+
+  GOT=0
+  for URL in "${URLS[@]}"; do
+    if curl -fsSL "${AUTH[@]}" "${URL}" -o "${WORKDIR}/src.tar.gz" 2>/dev/null \
+       && tar -tzf "${WORKDIR}/src.tar.gz" >/dev/null 2>&1; then
+      GOT=1
+      break
+    fi
+  done
+
+  if [[ "${GOT}" -eq 0 ]]; then
+    if [[ -z "${TOKEN}" ]]; then
+      die "Could not download ${REPO} (${REF}).
+     If the repository is private, pass a token:
+       TBM_TOKEN=<your-token> curl -fsSL <installer-url> | sudo -E bash -s --"
+    fi
+    die "Could not download ${REPO} (${REF}) even with a token.
+     Check that the token has 'repo' scope and access to this repository."
   fi
+
   mkdir -p "${WORKDIR}/unpack"
   tar -xzf "${WORKDIR}/src.tar.gz" -C "${WORKDIR}/unpack" \
     || die "The downloaded archive could not be extracted"

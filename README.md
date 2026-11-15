@@ -163,6 +163,20 @@ curl -fsSL https://raw.githubusercontent.com/OfficialMaziar/TokserBackuper/main/
   | sudo bash -s -- --domain backup.example.com --http-port 7676
 ```
 
+**If the repository is private**, pass a token with `repo` scope. It is used
+once for the download and is never written to disk:
+
+```bash
+TBM_TOKEN=ghp_xxxxxxxx curl -fsSL <installer-url> | sudo -E bash -s --
+```
+
+Or download the tarball yourself and run the installer from it:
+
+```bash
+curl -fsSL -H "Authorization: Bearer $TBM_TOKEN"   https://api.github.com/repos/OfficialMaziar/TokserBackuper/tarball/main -o tbm.tar.gz
+tar -xzf tbm.tar.gz && cd TokserBackuper-* && sudo ./scripts/install.sh
+```
+
 Prefer to read the script first:
 
 ```bash
